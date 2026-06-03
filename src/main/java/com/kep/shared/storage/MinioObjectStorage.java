@@ -3,12 +3,14 @@ package com.kep.shared.storage;
 import com.kep.shared.error.BusinessException;
 import com.kep.shared.error.ErrorCode;
 import io.minio.*;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 
 @Component
+@Lazy
 @Profile("!local-mock")
 public class MinioObjectStorage implements ObjectStorage {
 
