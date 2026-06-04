@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <title>KEP M2-PoC 文档转换保真度对比</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .col-iframe { height: 70vh; border: 1px solid #ccc; background: #fff; }
+    .col-header { font-weight: 600; padding: 8px 0; }
+  </style>
+</head>
+<body class="container py-4">
+  <h1 class="mb-3">KEP M2-PoC 文档转换保真度对比</h1>
+  <p class="text-muted">上传一份 .docx，下面 3 列分别展示 3 个方案的转换结果。</p>
+
+  <div class="mb-4">
+    <input type="file" id="file" accept=".docx" class="form-control mb-2">
+    <button id="go" class="btn btn-primary">转换</button>
+  </div>
+
+  <div class="row g-3" id="results">
+    <div class="col-md-4">
+      <div class="col-header" id="h-a">A-POI</div>
+      <iframe class="col-iframe w-100" id="r-a" sandbox="allow-same-origin"></iframe>
+    </div>
+    <div class="col-md-4">
+      <div class="col-header" id="h-b">B-LibreOffice</div>
+      <iframe class="col-iframe w-100" id="r-b" sandbox="allow-same-origin"></iframe>
+    </div>
+    <div class="col-md-4">
+      <div class="col-header" id="h-c">C-Mammoth</div>
+      <iframe class="col-iframe w-100" id="r-c" sandbox="allow-same-origin"></iframe>
+    </div>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const fileInput = $('#file');
+    const btn = $('#go');
+
+    btn.addEventListener('click', async () => {
+      const f = fileInput.files[0];
+      if (!f) { alert('请先选文件'); return; }
+      btn.disabled = true;
+      btn.textContent = '转换中…';
+      try {
+        for (const id of ['a', 'b', 'c']) {
+          const fd = new FormData();
+          fd.append('file', f);
+          const res = await fetch(`/convert/${id}`, { method: 'POST', body: fd });
+          if (!res.ok) {
+            document.querySelector(`#r-${id}`).srcdoc =
+              `<pre style="color:red;padding:1em">HTTP ${res.status}\n${await res.text()}</pre>`;
+            continue;
+          }
+          const json = await res.json();
+          document.querySelector(`#h-${id}`).textContent = json.name;
+          document.querySelector(`#r-${id}`).srcdoc = json.html;
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '转换';
+      }
+    });
+  </script>
+</body>
+</html>
