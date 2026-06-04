@@ -1,6 +1,7 @@
 package com.kep.shared.web;
 
 import com.kep.catalog.CatalogService;
+import com.kep.review.ReviewService;
 import com.kep.shared.error.BusinessException;
 import com.kep.shared.error.ErrorCode;
 import com.kep.shared.security.SecurityConfig;
@@ -25,6 +26,8 @@ class GlobalExceptionHandlerTest {
     // 满足 @WebMvcTest 切片里 CatalogController 的依赖（其依赖 CatalogService），
     // 切到不加载 JPA/内存适配器。本测试不调用 catalog 接口，mock 行为无关。
     @MockBean CatalogService catalogService;
+    // 同上，ReviewController 也被 @WebMvcTest 扫描到；其依赖 ReviewService 在切片里缺失。
+    @MockBean ReviewService reviewService;
 
     @RestController
     static class BoomController {
