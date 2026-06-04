@@ -5,6 +5,7 @@ import com.kep.permission.api.PermissionChecker;
 import org.springframework.stereotype.Service;
 
 /** M0 占位实现：一律放行。M1 替换为真实判定。 */
+@Deprecated // M2 删除：改为唯一 ThreeTierPermissionChecker
 @Service
 class AllowAllPermissionChecker implements PermissionChecker {
 
