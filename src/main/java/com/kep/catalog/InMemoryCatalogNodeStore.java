@@ -1,24 +1,19 @@
 package com.kep.catalog;
 
 import com.kep.shared.tenant.TenantContext;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.sql.DataSource;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 内存目录存储。用 TenantContext 当前租户作分区键，复刻 Hibernate @TenantId 的隔离语义。
+ * local-mock 下的内存目录存储。用 TenantContext 当前租户作分区键，复刻 Hibernate @TenantId 的隔离语义。
  * M1 增强：save 时计算 path（'/parent-path/{id}/'）。
- *
- * 作为 JpaCatalogNodeStore 的回退：JPA 端口的 {@code @ConditionalOnBean(CatalogNodeRepository.class)}
- * 在自动装配阶段因 bean 创建时序而无法命中（Spring 已知陷阱），故 M0 即靠此回退让 IT 也能跑通。
- * local-mock 模式下 DataSource 不存在，本 bean 自然命中。
  */
 @Component
-@ConditionalOnMissingBean(DataSource.class)
+@Profile("local-mock")
 class InMemoryCatalogNodeStore implements CatalogNodeStore {
 
     private final Map<String, Map<Long, CatalogNode>> byTenant = new ConcurrentHashMap<>();

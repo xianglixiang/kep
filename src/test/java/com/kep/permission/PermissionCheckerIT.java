@@ -4,6 +4,7 @@ import com.kep.permission.api.Permission;
 import com.kep.shared.tenant.TenantContext;
 import com.kep.support.IntegrationTest;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,8 +30,11 @@ class PermissionCheckerIT extends IntegrationTest {
     @AfterEach
     void clear() {
         TenantContext.clear();
-        // 测试间隔离：wiring_denied 依赖"node 1 无 ACL"，必须清掉 wiring_endToEnd 残留的 ACL
-        // 同时清掉 user_org / org_unit / catalog_node / app_user 让 count() 守护从头开始
+    }
+
+    @BeforeEach
+    void cleanState() {
+        // 跨 IT 隔离：每次都从头开始建数据,避免前序 IT(TenantIsolationIT 等)残留
         jdbc.execute("TRUNCATE TABLE acl, user_org, org_unit, catalog_node, app_user, review_request RESTART IDENTITY CASCADE");
     }
 
