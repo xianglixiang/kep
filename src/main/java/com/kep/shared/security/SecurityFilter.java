@@ -1,5 +1,6 @@
-package com.kep.shared.tenant;
+package com.kep.shared.security;
 
+import com.kep.shared.tenant.TenantContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,14 +12,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * 从 X-Tenant-Id 请求头读取租户并写入 TenantContext，请求结束后清理。
- * M0 用请求头承载租户；M1 接入鉴权后改为从已认证主体解析。
+ * 从请求头读取租户与用户并填充 SecurityContext/TenantContext。
+ * M1 用头承载（X-User-Id + X-Tenant-Id）；M2+ 替换为真实 Spring Security。
+ * 替代 M0 的 TenantFilter，行为向后兼容（同时仍写 TenantContext）。
  */
 @Component
 @Order(1)
-public class TenantFilter extends OncePerRequestFilter {
+public class SecurityFilter extends OncePerRequestFilter {
 
     public static final String TENANT_HEADER = "X-Tenant-Id";
+    public static final String USER_HEADER = "X-User-Id";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -28,9 +31,14 @@ public class TenantFilter extends OncePerRequestFilter {
             if (tenantId != null && !tenantId.isBlank()) {
                 TenantContext.set(tenantId);
             }
+            String userId = request.getHeader(USER_HEADER);
+            if (userId != null && !userId.isBlank()) {
+                SecurityContext.setCurrentUserId(Long.parseLong(userId));
+            }
             chain.doFilter(request, response);
         } finally {
             TenantContext.clear();
+            SecurityContext.clear();
         }
     }
 }

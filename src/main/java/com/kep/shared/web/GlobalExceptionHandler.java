@@ -3,6 +3,7 @@ package com.kep.shared.web;
 import com.kep.shared.error.BusinessException;
 import com.kep.shared.error.ErrorCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -21,5 +22,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity
             .status(ErrorCode.INTERNAL.status())
             .body(ApiResponse.error(ErrorCode.INTERNAL.name(), "服务器内部错误"));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity
+            .status(ErrorCode.FORBIDDEN.status())
+            .body(ApiResponse.error(ErrorCode.FORBIDDEN.name(), "无权访问"));
     }
 }

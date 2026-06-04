@@ -3,6 +3,7 @@ package com.kep.shared.web;
 import com.kep.catalog.CatalogService;
 import com.kep.shared.error.BusinessException;
 import com.kep.shared.error.ErrorCode;
+import com.kep.shared.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,7 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest
-@Import({GlobalExceptionHandler.class, GlobalExceptionHandlerTest.BoomController.class})
+@Import({GlobalExceptionHandler.class, GlobalExceptionHandlerTest.BoomController.class, SecurityConfig.class})
 class GlobalExceptionHandlerTest {
 
     @Autowired MockMvc mvc;
