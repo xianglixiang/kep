@@ -10,13 +10,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 内存目录存储。用 TenantContext 当前租户作分区键，复刻 Hibernate @TenantId 的隔离语义，
- * 使快速测试与 local-mock 运行无需数据库即反映真实的跨租户不可见行为。
+ * 内存目录存储。用 TenantContext 当前租户作分区键，复刻 Hibernate @TenantId 的隔离语义。
+ * M1 增强：save 时计算 path（'/parent-path/{id}/'）。
  *
- * 作为无数据源时的回退实现：DataSource 不存在时即生效，覆盖三种场景：
- *   1) @ActiveProfiles("local-mock")（DataSourceAutoConfiguration 被排除）
- *   2) @WebMvcTest 切片（无 JDBC 自动配置）
- *   3) 任何未配置数据源的环境
+ * 作为 JpaCatalogNodeStore 的回退：JPA 端口的 {@code @ConditionalOnBean(CatalogNodeRepository.class)}
+ * 在自动装配阶段因 bean 创建时序而无法命中（Spring 已知陷阱），故 M0 即靠此回退让 IT 也能跑通。
+ * local-mock 模式下 DataSource 不存在，本 bean 自然命中。
  */
 @Component
 @ConditionalOnMissingBean(DataSource.class)
@@ -32,7 +31,17 @@ class InMemoryCatalogNodeStore implements CatalogNodeStore {
 
     @Override
     public CatalogNode save(CatalogNode node) {
-        node.assignId(seq.incrementAndGet());
+        if (node.getId() == null) {
+            node.assignId(seq.incrementAndGet());
+        }
+        // 算 path
+        String parentPath = "/";
+        if (node.getParentId() != null) {
+            CatalogNode parent = byTenant.getOrDefault(tenant(), Map.of())
+                .get(node.getParentId());
+            if (parent != null) parentPath = parent.getPath();
+        }
+        node.assignPath(parentPath + node.getId() + "/");
         byTenant.computeIfAbsent(tenant(), k -> new LinkedHashMap<>()).put(node.getId(), node);
         return node;
     }
