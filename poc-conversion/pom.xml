@@ -50,6 +50,7 @@
       </resource>
       <resource>
         <directory>fixtures</directory>
+        <targetPath>fixtures</targetPath>
       </resource>
     </resources>
     <testResources>
@@ -58,6 +59,7 @@
       </testResource>
       <testResource>
         <directory>fixtures</directory>
+        <targetPath>fixtures</targetPath>
       </testResource>
     </testResources>
     <plugins>
