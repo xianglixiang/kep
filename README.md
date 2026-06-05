@@ -33,8 +33,19 @@ DB 与中间件均置于端口接口之后：生产用 JPA/MinIO 适配器（`@P
 - 业务接入: catalog.create/listChildren 真实过 check, review.submit/decide 骨架
 - 12 用例表驱动算法单测 + 3 端口单测 + 真实 JPA IT + HTTP 端到端 IT
 
+## M2-A 文档上传/解析（已完成）
+
+- 落地: V3 迁移 + knowledge/knowledge_version 双表
+- 选型: Apache POI 纯 Java（M2-PoC 结论主选，p50 85ms，结构要素全过）
+- 存储: HTML 落 `knowledge_version.content_richtext` + 原 docx 落 MinIO（key=tenant-x/knowledge/{uuid}/v1/original.docx）
+- 鉴权: M1 check(user, node, WRITE|READ) 守住
+- API: POST /api/knowledge, GET /api/knowledge/{id}, /api/knowledge/{id}/versions/{n}, /api/knowledge/{id}/file
+- 测试: 单测 8 (converter+extractor) + IT 4 = 12 新用例
+- 已知局限（按 M2-PoC 评估）: 颜色 / 超链接 / 图片 / 页眉 4 项保真度丢，M2-B+ 增量补
+- M2-PoC 仍保留在 `poc-conversion/` 用于将来 fallback (Mammoth) 试验
+
 ## 测试
 
-- 快速套件: `./mvnw test`（默认 24 测试，零 Docker）
-- 集成套件: `./mvnw test -Pit`（36 测试，需 Docker + Testcontainers）
-- M0 + M1 合计: 24 快速 / 36 完整
+- 快速: `./mvnw test`
+- 完整: `./mvnw test -Pit`
+- 累计 (M0 + M1 + M2-A + M2-PoC): 快速 ~40 / 完整 ~80
