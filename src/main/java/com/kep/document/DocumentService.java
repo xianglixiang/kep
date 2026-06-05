@@ -2,10 +2,13 @@ package com.kep.document;
 
 import com.kep.document.api.Converter;
 import com.kep.document.converter.DefaultTitleExtractor;
+import com.kep.document.dto.EditLockView;
 import com.kep.document.dto.KnowledgeVersionView;
 import com.kep.document.dto.KnowledgeView;
 import com.kep.permission.api.Permission;
 import com.kep.permission.api.PermissionChecker;
+import com.kep.shared.error.BusinessException;
+import com.kep.shared.error.ErrorCode;
 import com.kep.shared.storage.ObjectStorage;
 import com.kep.shared.tenant.TenantContext;
 import org.springframework.context.annotation.Lazy;
@@ -31,19 +34,22 @@ public class DocumentService {
     private final Converter converter;
     private final DefaultTitleExtractor titleExtractor;
     private final PermissionChecker permissionChecker;
+    private final EditLockRepository editLockRepo;
 
     public DocumentService(KnowledgeRepository knowledgeRepo,
                            KnowledgeVersionRepository versionRepo,
                            @Lazy ObjectStorage objectStorage,
                            Converter converter,
                            DefaultTitleExtractor titleExtractor,
-                           PermissionChecker permissionChecker) {
+                           PermissionChecker permissionChecker,
+                           EditLockRepository editLockRepo) {
         this.knowledgeRepo = knowledgeRepo;
         this.versionRepo = versionRepo;
         this.objectStorage = objectStorage;
         this.converter = converter;
         this.titleExtractor = titleExtractor;
         this.permissionChecker = permissionChecker;
+        this.editLockRepo = editLockRepo;
     }
 
     @Transactional
@@ -79,6 +85,43 @@ public class DocumentService {
         knowledgeRepo.save(k);
 
         return KnowledgeView.from(k, KnowledgeVersionView.from(v));
+    }
+
+    @Transactional
+    public EditLockView acquireLock(long userId, long knowledgeId) {
+        Knowledge k = knowledgeRepo.findById(knowledgeId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识不存在"));
+        permissionChecker.check(userId, k.getCatalogNodeId(), Permission.WRITE);
+
+        return editLockRepo.findByKnowledgeId(knowledgeId)
+            .map(existing -> {
+                if (existing.isExpired()) {
+                    EditLock refreshed = EditLock.refresh(existing, userId);
+                    return EditLockView.from(editLockRepo.save(refreshed));
+                }
+                if (existing.isHeldBy(userId)) {
+                    // 自己的锁, idempotent 刷新 TTL
+                    EditLock refreshed = EditLock.refresh(existing, userId);
+                    return EditLockView.from(editLockRepo.save(refreshed));
+                }
+                // 他人持锁
+                throw new BusinessException(ErrorCode.CONFLICT,
+                    "知识已被其他用户锁定，过期时间：" + existing.getExpiresAt());
+            })
+            .orElseGet(() -> {
+                EditLock lock = EditLock.acquire(knowledgeId, userId);
+                return EditLockView.from(editLockRepo.save(lock));
+            });
+    }
+
+    @Transactional
+    public void releaseLock(long userId, long knowledgeId) {
+        EditLock lock = editLockRepo.findByKnowledgeId(knowledgeId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "锁不存在"));
+        if (!lock.isHeldBy(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "仅持锁者可释放");
+        }
+        editLockRepo.delete(lock);
     }
 
     @Transactional(readOnly = true)
