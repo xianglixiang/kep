@@ -1,5 +1,6 @@
 package com.kep.document;
 
+import com.kep.document.dto.EditLockView;
 import com.kep.document.dto.KnowledgeVersionView;
 import com.kep.document.dto.KnowledgeView;
 import com.kep.shared.error.BusinessException;
@@ -60,6 +61,36 @@ public class DocumentController {
             .contentType(DOCX_MEDIA_TYPE)
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"knowledge-" + id + ".docx\"")
             .body(bytes);
+    }
+
+    @PostMapping("/{id}/lock")
+    public ApiResponse<EditLockView> acquireLock(@PathVariable Long id) {
+        Long userId = requireUserId();
+        return ApiResponse.ok(service.acquireLock(userId, id));
+    }
+
+    @DeleteMapping("/{id}/lock")
+    public ApiResponse<Void> releaseLock(@PathVariable Long id) {
+        Long userId = requireUserId();
+        service.releaseLock(userId, id);
+        return ApiResponse.ok(null);
+    }
+
+    @PostMapping(value = "/{id}/versions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<KnowledgeView> createNewVersion(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "title", required = false) String title) throws Exception {
+        Long userId = requireUserId();
+        return ApiResponse.ok(service.createNewVersion(userId, id, file, title));
+    }
+
+    @PutMapping(value = "/{id}/content", consumes = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<ApiResponse<Void>> putHtmlContent(
+            @PathVariable Long id, @RequestBody String html) {
+        Long userId = requireUserId();
+        service.putHtmlContent(userId, id, html);
+        return ResponseEntity.ok().build();
     }
 
     private Long requireUserId() {
