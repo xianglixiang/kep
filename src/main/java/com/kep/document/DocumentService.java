@@ -124,6 +124,58 @@ public class DocumentService {
         editLockRepo.delete(lock);
     }
 
+    @Transactional
+    public KnowledgeView createNewVersion(long userId, long knowledgeId,
+                                          MultipartFile file, String title) throws Exception {
+        Knowledge k = knowledgeRepo.findById(knowledgeId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识不存在"));
+        permissionChecker.check(userId, k.getCatalogNodeId(), Permission.WRITE);
+
+        EditLock lock = editLockRepo.findByKnowledgeId(knowledgeId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.FORBIDDEN, "请先获取编辑锁"));
+        if (!lock.isHeldBy(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "知识被其他用户锁定");
+        }
+
+        // 1. POI 转换
+        byte[] docxBytes = file.getBytes();
+        String html = converter.convert(new ByteArrayInputStream(docxBytes));
+
+        // 2. 解析 title
+        String finalTitle = (title == null || title.isBlank())
+            ? titleExtractor.from(html)
+            : title;
+
+        // 3. 计算 next version_no
+        Integer maxNo = versionRepo.findByKnowledgeIdOrderByVersionNoDesc(knowledgeId)
+            .stream().findFirst().map(KnowledgeVersion::getVersionNo).orElse(0);
+        int nextNo = maxNo + 1;
+
+        // 4. 上传 OSS
+        String tenant = TenantContext.get();
+        String key = "tenant-" + tenant + "/knowledge/" + knowledgeId + "/v" + nextNo + "/original.docx";
+        objectStorage.put(key, new ByteArrayInputStream(docxBytes), docxBytes.length,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+
+        // 5. 找 parent_version_id（当前版本）
+        Long parentId = k.getCurrentVersionId();
+
+        // 6. INSERT version
+        KnowledgeVersion v = versionRepo.save(KnowledgeVersion.update(
+            knowledgeId, nextNo, html, key, "docx", parentId, userId));
+
+        // 7. UPDATE knowledge.current_version_id
+        k.setCurrentVersionId(v.getId());
+        knowledgeRepo.save(k);
+
+        return KnowledgeView.from(k, KnowledgeVersionView.from(v));
+    }
+
+    @Transactional
+    public KnowledgeView putHtmlContent(long userId, long knowledgeId, String html) {
+        throw new BusinessException(ErrorCode.NOT_IMPLEMENTED, "M2-C 即将支持");
+    }
+
     @Transactional(readOnly = true)
     public KnowledgeView getCurrent(long userId, long knowledgeId) {
         Knowledge k = knowledgeRepo.findById(knowledgeId)
