@@ -8,6 +8,7 @@ import com.kep.permission.api.Permission;
 import com.kep.permission.api.PermissionChecker;
 import com.kep.shared.storage.ObjectStorage;
 import com.kep.shared.tenant.TenantContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +34,7 @@ public class DocumentService {
 
     public DocumentService(KnowledgeRepository knowledgeRepo,
                            KnowledgeVersionRepository versionRepo,
-                           ObjectStorage objectStorage,
+                           @Lazy ObjectStorage objectStorage,
                            Converter converter,
                            DefaultTitleExtractor titleExtractor,
                            PermissionChecker permissionChecker) {
