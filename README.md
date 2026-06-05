@@ -49,3 +49,20 @@ DB 与中间件均置于端口接口之后：生产用 JPA/MinIO 适配器（`@P
 - 快速: `./mvnw test`
 - 完整: `./mvnw test -Pit`
 - 累计 (M0 + M1 + M2-A + M2-PoC): 快速 ~40 / 完整 ~80
+
+## M2-B1 编辑锁 + 版本链（已完成）
+
+- 落地: V4 迁移 + edit_lock 表（UNIQUE knowledge_id + 30 min TTL）
+- API: POST /api/knowledge/{id}/lock, DELETE /api/knowledge/{id}/lock, POST /api/knowledge/{id}/versions, PUT /api/knowledge/{id}/content (501 桩)
+- 锁策略: 可过期 30 min，过期后任何 WRITE 者可抢；上传 v2 后锁保持（手动释放）
+- 版本号: MAX+1，INSERT 时计算（锁是排他的，低并发下无冲突）
+- 鉴权: M1 check(WRITE) + 锁持有者双重门
+- PUT HTML: 501 桩（NOT_IMPLEMENTED 错误码），留给 M2-C 富文本编辑器
+- 测试: 单元 4 (EditLock TTL/refresh/holder) + IT 7 (锁/版本/401/403/409/501) = 11 新用例
+- 不在 M2-B1 范围: diff/回滚/force 抢占 留 M2-B2
+
+## 测试
+
+- 快速: `./mvnw test` (~40 用例,零 Docker)
+- 完整: `./mvnw test -Pit` (~60 用例,需 Docker + Testcontainers)
+- 累计: M0 + M1 + M2-A + M2-B1 + M2-PoC
