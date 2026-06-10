@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 生产 catalog 存储：默认剖面（启用 JPA/Flyway）。在 local-mock 剖面下不激活，
@@ -27,5 +28,20 @@ class JpaCatalogNodeStore implements CatalogNodeStore {
     @Override
     public List<CatalogNode> findByParent(Long parentId) {
         return repo.findByParentIdOrderBySort(parentId);
+    }
+
+    @Override
+    public List<CatalogNode> findAll() {
+        return repo.findAll();
+    }
+
+    @Override
+    public Optional<CatalogNode> findById(Long id) {
+        return repo.findById(id);
+    }
+
+    @Override
+    public List<CatalogNode> findAllById(List<Long> ids) {
+        return repo.findAllById(ids);
     }
 }
