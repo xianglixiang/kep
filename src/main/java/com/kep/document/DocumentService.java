@@ -2,9 +2,12 @@ package com.kep.document;
 
 import com.kep.document.api.Converter;
 import com.kep.document.converter.DefaultTitleExtractor;
+import com.kep.document.dto.DiffView;
+import com.kep.document.dto.DiffView.DiffSegment;
 import com.kep.document.dto.EditLockView;
 import com.kep.document.dto.KnowledgeVersionView;
 import com.kep.document.dto.KnowledgeView;
+import com.kep.document.util.LineDiff;
 import com.kep.permission.api.Permission;
 import com.kep.permission.api.PermissionChecker;
 import com.kep.shared.error.BusinessException;
@@ -18,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -215,5 +219,27 @@ public class DocumentService {
                 com.kep.shared.error.ErrorCode.NOT_FOUND, "原始文件未保存");
         }
         return objectStorage.get(v.getOriginalFileKey());
+    }
+
+    @Transactional(readOnly = true)
+    public DiffView diff(long userId, long knowledgeId, int fromNo, int toNo) {
+        if (fromNo == toNo) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "from 与 to 不能相同");
+        }
+        Knowledge k = knowledgeRepo.findById(knowledgeId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识不存在"));
+        permissionChecker.check(userId, k.getCatalogNodeId(), Permission.READ);
+
+        KnowledgeVersion from = versionRepo.findByKnowledgeIdAndVersionNo(knowledgeId, fromNo)
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "版本 " + fromNo + " 不存在"));
+        KnowledgeVersion to = versionRepo.findByKnowledgeIdAndVersionNo(knowledgeId, toNo)
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "版本 " + toNo + " 不存在"));
+
+        List<DiffSegment> segments = LineDiff.diff(from.getContentRichtext(), to.getContentRichtext());
+        return new DiffView(
+            DiffView.DiffVersion.from(from),
+            DiffView.DiffVersion.from(to),
+            segments
+        );
     }
 }

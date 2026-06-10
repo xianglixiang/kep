@@ -1,5 +1,6 @@
 package com.kep.document;
 
+import com.kep.document.dto.DiffView;
 import com.kep.document.dto.EditLockView;
 import com.kep.document.dto.KnowledgeVersionView;
 import com.kep.document.dto.KnowledgeView;
@@ -61,6 +62,14 @@ public class DocumentController {
             .contentType(DOCX_MEDIA_TYPE)
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"knowledge-" + id + ".docx\"")
             .body(bytes);
+    }
+
+    @GetMapping("/{id}/diff")
+    public ApiResponse<DiffView> diff(@PathVariable Long id,
+                                      @RequestParam int from,
+                                      @RequestParam int to) {
+        Long userId = requireUserId();
+        return ApiResponse.ok(service.diff(userId, id, from, to));
     }
 
     @PostMapping("/{id}/lock")
