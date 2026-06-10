@@ -1,5 +1,6 @@
 package com.kep.document;
 
+import com.kep.document.dto.DiffView;
 import com.kep.document.dto.EditLockView;
 import com.kep.document.dto.KnowledgeVersionView;
 import com.kep.document.dto.KnowledgeView;
@@ -63,10 +64,26 @@ public class DocumentController {
             .body(bytes);
     }
 
-    @PostMapping("/{id}/lock")
-    public ApiResponse<EditLockView> acquireLock(@PathVariable Long id) {
+    @GetMapping("/{id}/diff")
+    public ApiResponse<DiffView> diff(@PathVariable Long id,
+                                      @RequestParam int from,
+                                      @RequestParam int to) {
         Long userId = requireUserId();
-        return ApiResponse.ok(service.acquireLock(userId, id));
+        return ApiResponse.ok(service.diff(userId, id, from, to));
+    }
+
+    @PostMapping("/{id}/rollback/{n}")
+    public ApiResponse<KnowledgeView> rollback(@PathVariable Long id, @PathVariable int n) {
+        Long userId = requireUserId();
+        return ApiResponse.ok(service.rollback(userId, id, n));
+    }
+
+    @PostMapping("/{id}/lock")
+    public ApiResponse<EditLockView> acquireLock(
+            @PathVariable Long id,
+            @RequestParam(value = "force", required = false) Boolean force) {
+        Long userId = requireUserId();
+        return ApiResponse.ok(service.acquireLock(userId, id, force != null && force));
     }
 
     @DeleteMapping("/{id}/lock")
