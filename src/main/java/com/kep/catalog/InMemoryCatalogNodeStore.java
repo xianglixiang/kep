@@ -48,4 +48,25 @@ class InMemoryCatalogNodeStore implements CatalogNodeStore {
             .sorted(Comparator.comparingInt(CatalogNode::getSort))
             .toList();
     }
+
+    @Override
+    public List<CatalogNode> findAll() {
+        return new ArrayList<>(byTenant.getOrDefault(tenant(), Map.of()).values());
+    }
+
+    @Override
+    public Optional<CatalogNode> findById(Long id) {
+        return Optional.ofNullable(byTenant.getOrDefault(tenant(), Map.of()).get(id));
+    }
+
+    @Override
+    public List<CatalogNode> findAllById(List<Long> ids) {
+        Map<Long, CatalogNode> map = byTenant.getOrDefault(tenant(), Map.of());
+        List<CatalogNode> out = new ArrayList<>();
+        for (Long id : ids) {
+            CatalogNode n = map.get(id);
+            if (n != null) out.add(n);
+        }
+        return out;
+    }
 }
