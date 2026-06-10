@@ -72,6 +72,12 @@ public class DocumentController {
         return ApiResponse.ok(service.diff(userId, id, from, to));
     }
 
+    @PostMapping("/{id}/rollback/{n}")
+    public ApiResponse<KnowledgeView> rollback(@PathVariable Long id, @PathVariable int n) {
+        Long userId = requireUserId();
+        return ApiResponse.ok(service.rollback(userId, id, n));
+    }
+
     @PostMapping("/{id}/lock")
     public ApiResponse<EditLockView> acquireLock(@PathVariable Long id) {
         Long userId = requireUserId();

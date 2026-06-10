@@ -242,4 +242,33 @@ public class DocumentService {
             segments
         );
     }
+
+    @Transactional
+    public KnowledgeView rollback(long userId, long knowledgeId, int targetVersionNo) {
+        Knowledge k = knowledgeRepo.findById(knowledgeId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识不存在"));
+        permissionChecker.check(userId, k.getCatalogNodeId(), Permission.WRITE);
+
+        EditLock lock = editLockRepo.findByKnowledgeId(knowledgeId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.FORBIDDEN, "请先获取编辑锁"));
+        if (!lock.isHeldBy(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "知识被其他用户锁定");
+        }
+
+        KnowledgeVersion target = versionRepo.findByKnowledgeIdAndVersionNo(knowledgeId, targetVersionNo)
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "版本 " + targetVersionNo + " 不存在"));
+
+        Integer maxNo = versionRepo.findByKnowledgeIdOrderByVersionNoDesc(knowledgeId)
+            .stream().findFirst().map(KnowledgeVersion::getVersionNo).orElse(0);
+        int nextNo = maxNo + 1;
+
+        KnowledgeVersion v = versionRepo.save(KnowledgeVersion.rollback(
+            knowledgeId, nextNo, target.getContentRichtext(), target.getOriginalFileKey(),
+            target.getFileFormat(), k.getCurrentVersionId(), userId));
+
+        k.setCurrentVersionId(v.getId());
+        knowledgeRepo.save(k);
+
+        return KnowledgeView.from(k, KnowledgeVersionView.from(v));
+    }
 }

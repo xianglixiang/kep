@@ -76,6 +76,22 @@ public class KnowledgeVersion extends TenantAwareEntity {
         return v;
     }
 
+    public static KnowledgeVersion rollback(Long knowledgeId, int versionNo, String content,
+                                            String originalFileKey, String fileFormat,
+                                            Long parentVersionId, Long editorId) {
+        KnowledgeVersion v = new KnowledgeVersion();
+        v.knowledgeId = knowledgeId;
+        v.versionNo = versionNo;
+        v.contentRichtext = content;
+        v.originalFileKey = originalFileKey;
+        v.fileFormat = fileFormat;
+        v.changeType = "ROLLBACK";
+        v.parentVersionId = parentVersionId;
+        v.editorId = editorId;
+        v.createdAt = OffsetDateTime.now();
+        return v;
+    }
+
     public Long getId() { return id; }
     public Long getKnowledgeId() { return knowledgeId; }
     public int getVersionNo() { return versionNo; }
