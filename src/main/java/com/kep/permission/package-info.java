@@ -1,3 +1,3 @@
 @org.springframework.modulith.ApplicationModule(
-    allowedDependencies = {})
+    allowedDependencies = {"shared"})
 package com.kep.permission;

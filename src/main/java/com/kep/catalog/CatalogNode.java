@@ -46,6 +46,9 @@ public class CatalogNode extends TenantAwareEntity {
         this.id = id;
     }
 
+    /** 仅供 InMemoryCatalogNodeStore 与 JPA 适配器在 save 时设置 path。 */
+    void assignPath(String path) { this.path = path; }
+
     public Long getId() { return id; }
     public Long getParentId() { return parentId; }
     public String getName() { return name; }
