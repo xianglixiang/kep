@@ -82,3 +82,19 @@ DB 与中间件均置于端口接口之后：生产用 JPA/MinIO 适配器（`@P
 - 快速: `./mvnw test` (~48 用例,零 Docker)
 - 完整: `./mvnw test -Pit` (~74 用例,需 Docker + Testcontainers)
 - 累计: M0 + M1 + M2-A + M2-B1 + M2-B2 + M2-PoC
+
+## M3 知识地图（已完成）
+
+- 落地: V5 迁移 (title 索引) + KnowledgeRepository 6 个 query method (含 title 前模糊) + KnowledgeQueryApi (document 模块 api 接口, 供 catalog 跨模块用) + KnowledgeQueryService + CatalogController 3 端点
+- API: GET /api/catalog/nodes/tree (嵌套 JSON, 不可读节点隐藏), GET /api/catalog/nodes/knowledge (4 维过滤 + 分页), GET /api/catalog/nodes/breadcrumb
+- 详情复用 M2-A: GET /api/knowledge/{id}
+- 鉴权: M1 PermissionChecker.hasRead(user, node, READ) 控可见性;面包屑不查 READ
+- 跨租户: @TenantId SQL 层自动 404
+- 测试: 单元 4 (KnowledgeQueryService) + IT 6 (HTTP 端到端) = 10 新用例
+- 不在 M3 范围: ES 全文搜索 / 标签 / 知识图谱 / 审计日志 / 大树懒加载
+
+## 测试
+
+- 快速: `./mvnw test` (~50 用例,零 Docker)
+- 完整: `./mvnw test -Pit` (~85 用例,需 Docker)
+- 累计: M0 + M1 + M2-A + M2-B1 + M2-B2 + M3 + M2-PoC
