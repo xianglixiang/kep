@@ -66,3 +66,19 @@ DB 与中间件均置于端口接口之后：生产用 JPA/MinIO 适配器（`@P
 - 快速: `./mvnw test` (~40 用例,零 Docker)
 - 完整: `./mvnw test -Pit` (~60 用例,需 Docker + Testcontainers)
 - 累计: M0 + M1 + M2-A + M2-B1 + M2-PoC
+
+## M2-B2 diff + 回滚 + force 抢占（已完成）
+
+- 落地: 3 个新端点,零新表
+- diff: GET /api/knowledge/{id}/diff?from=1&to=2 → JSON 行级 segments (zero deps, 纯 Java LCS)
+- 回滚: POST /api/knowledge/{id}/rollback/{n} → 创建 v_n+1 (change_type='ROLLBACK'),复用 v_n 的 content + original_file_key
+- force 抢锁: POST /api/knowledge/{id}/lock?force=true → 无视 TTL 抢锁
+- 鉴权: M1 check(WRITE) + 锁持有者 (rollback 路径) / READ (diff 路径)
+- 测试: 单元 6 (LineDiff) + IT 7 (diff/rollback/force) = 13 新用例
+- 不在 M2-B2 范围: 字符级 diff 高亮 (M2-B2+ / 前端层), 审计日志 (M3 统一加)
+
+## 测试
+
+- 快速: `./mvnw test` (~48 用例,零 Docker)
+- 完整: `./mvnw test -Pit` (~74 用例,需 Docker + Testcontainers)
+- 累计: M0 + M1 + M2-A + M2-B1 + M2-B2 + M2-PoC
