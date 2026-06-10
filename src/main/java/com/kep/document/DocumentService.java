@@ -92,23 +92,17 @@ public class DocumentService {
     }
 
     @Transactional
-    public EditLockView acquireLock(long userId, long knowledgeId) {
+    public EditLockView acquireLock(long userId, long knowledgeId, boolean force) {
         Knowledge k = knowledgeRepo.findById(knowledgeId)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识不存在"));
         permissionChecker.check(userId, k.getCatalogNodeId(), Permission.WRITE);
 
         return editLockRepo.findByKnowledgeId(knowledgeId)
             .map(existing -> {
-                if (existing.isExpired()) {
+                if (force || existing.isExpired() || existing.isHeldBy(userId)) {
                     EditLock refreshed = EditLock.refresh(existing, userId);
                     return EditLockView.from(editLockRepo.save(refreshed));
                 }
-                if (existing.isHeldBy(userId)) {
-                    // 自己的锁, idempotent 刷新 TTL
-                    EditLock refreshed = EditLock.refresh(existing, userId);
-                    return EditLockView.from(editLockRepo.save(refreshed));
-                }
-                // 他人持锁
                 throw new BusinessException(ErrorCode.CONFLICT,
                     "知识已被其他用户锁定，过期时间：" + existing.getExpiresAt());
             })
@@ -116,6 +110,10 @@ public class DocumentService {
                 EditLock lock = EditLock.acquire(knowledgeId, userId);
                 return EditLockView.from(editLockRepo.save(lock));
             });
+    }
+
+    public EditLockView acquireLock(long userId, long knowledgeId) {
+        return acquireLock(userId, knowledgeId, false);
     }
 
     @Transactional

@@ -79,9 +79,11 @@ public class DocumentController {
     }
 
     @PostMapping("/{id}/lock")
-    public ApiResponse<EditLockView> acquireLock(@PathVariable Long id) {
+    public ApiResponse<EditLockView> acquireLock(
+            @PathVariable Long id,
+            @RequestParam(value = "force", required = false) Boolean force) {
         Long userId = requireUserId();
-        return ApiResponse.ok(service.acquireLock(userId, id));
+        return ApiResponse.ok(service.acquireLock(userId, id, force != null && force));
     }
 
     @DeleteMapping("/{id}/lock")
