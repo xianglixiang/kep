@@ -8,7 +8,8 @@ public enum ErrorCode {
     FORBIDDEN(HttpStatus.FORBIDDEN),
     NOT_FOUND(HttpStatus.NOT_FOUND),
     CONFLICT(HttpStatus.CONFLICT),
-    INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR);
+    INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR),
+    NOT_IMPLEMENTED(HttpStatus.NOT_IMPLEMENTED);
 
     private final HttpStatus status;
 
