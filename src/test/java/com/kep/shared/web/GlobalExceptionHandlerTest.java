@@ -27,6 +27,8 @@ class GlobalExceptionHandlerTest {
     // 满足 @WebMvcTest 切片里 CatalogController 的依赖（其依赖 CatalogService），
     // 切到不加载 JPA/内存适配器。本测试不调用 catalog 接口，mock 行为无关。
     @MockBean CatalogService catalogService;
+    // CatalogController 现在还依赖 KnowledgeQueryService (M3 task 5)，切片里也得 mock。
+    @MockBean com.kep.catalog.KnowledgeQueryService knowledgeQueryService;
     // 同上，ReviewController 也被 @WebMvcTest 扫描到；其依赖 ReviewService 在切片里缺失。
     @MockBean ReviewService reviewService;
     // DocumentController 现在是 @RestController,@WebMvcTest 默认扫描到会要求 DocumentService bean

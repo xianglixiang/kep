@@ -16,9 +16,12 @@ import java.util.List;
 public class CatalogController {
 
     private final CatalogService service;
+    private final KnowledgeQueryService knowledgeQueryService;
 
-    public CatalogController(CatalogService service) {
+    public CatalogController(CatalogService service,
+                             KnowledgeQueryService knowledgeQueryService) {
         this.service = service;
+        this.knowledgeQueryService = knowledgeQueryService;
     }
 
     @PostMapping
@@ -31,6 +34,32 @@ public class CatalogController {
     public ApiResponse<List<NodeView>> list(@RequestParam(required = false) Long parentId) {
         Long userId = requireUserId();
         return ApiResponse.ok(service.listChildren(userId, parentId));
+    }
+
+    @GetMapping("/tree")
+    public ApiResponse<com.kep.catalog.dto.CatalogTreeView> tree(
+            @RequestParam(required = false) Long rootId) {
+        Long userId = requireUserId();
+        return ApiResponse.ok(knowledgeQueryService.tree(userId, rootId));
+    }
+
+    @GetMapping("/knowledge")
+    public ApiResponse<java.util.Map<String, Object>> listKnowledge(
+            @RequestParam Long nodeId,
+            @RequestParam(required = false) String docType,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Long userId = requireUserId();
+        return ApiResponse.ok(knowledgeQueryService.list(userId, nodeId, docType, status, q, page, size));
+    }
+
+    @GetMapping("/breadcrumb")
+    public ApiResponse<com.kep.catalog.dto.BreadcrumbView> breadcrumb(
+            @RequestParam Long nodeId) {
+        Long userId = requireUserId();
+        return ApiResponse.ok(knowledgeQueryService.breadcrumb(nodeId));
     }
 
     private Long requireUserId() {
