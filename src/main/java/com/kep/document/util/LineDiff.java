@@ -25,7 +25,12 @@ public final class LineDiff {
 
     private static String stripHtml(String html) {
         if (html == null) return "";
-        return HTML_TAGS.matcher(html).replaceAll("").trim();
+        String s = html;
+        // 块级闭合标签 (</p>、</div>、</h1-6>、</li>、</tr>、</br>) 视为行分隔
+        s = s.replaceAll("(?i)</\\s*(p|div|h[1-6]|li|tr|br)\\s*>", "\n");
+        // 剩余标签全部去掉
+        s = HTML_TAGS.matcher(s).replaceAll("");
+        return s.trim();
     }
 
     private static List<String> splitLines(String s) {
@@ -84,10 +89,11 @@ public final class LineDiff {
     }
 
     private static DiffSegment toSegment(String type, List<String> lines) {
+        List<String> copy = List.copyOf(lines);
         return switch (type) {
-            case "add" -> DiffSegment.add(lines);
-            case "remove" -> DiffSegment.remove(lines);
-            default -> DiffSegment.equal(lines);
+            case "add" -> DiffSegment.add(copy);
+            case "remove" -> DiffSegment.remove(copy);
+            default -> DiffSegment.equal(copy);
         };
     }
 }
