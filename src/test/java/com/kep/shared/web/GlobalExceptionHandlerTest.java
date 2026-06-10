@@ -1,6 +1,7 @@
 package com.kep.shared.web;
 
 import com.kep.catalog.CatalogService;
+import com.kep.document.DocumentService;
 import com.kep.review.ReviewService;
 import com.kep.shared.error.BusinessException;
 import com.kep.shared.error.ErrorCode;
@@ -28,6 +29,8 @@ class GlobalExceptionHandlerTest {
     @MockBean CatalogService catalogService;
     // 同上，ReviewController 也被 @WebMvcTest 扫描到；其依赖 ReviewService 在切片里缺失。
     @MockBean ReviewService reviewService;
+    // DocumentController 现在是 @RestController,@WebMvcTest 默认扫描到会要求 DocumentService bean
+    @MockBean DocumentService documentService;
 
     @RestController
     static class BoomController {
